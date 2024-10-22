@@ -82,7 +82,7 @@ public:
     T& operator[](int index)
     {
         if(index < 0 || index >= size_)
-            syd::cout << "index of range" << std::endl;
+            std::cout << "index of range" << std::endl;
         return vec_[index];
     }
 
