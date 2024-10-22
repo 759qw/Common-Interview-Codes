@@ -1,0 +1,105 @@
+#include <iostream>
+#include <memory>
+#include <mutex>
+
+using namespace std;
+template<typename T>
+class MyPtr
+{
+private:
+    T* ptr_;
+    int* count_;
+    mutex* mutex_;
+
+public:
+    MyPtr(T* ptr = nullptr):ptr_(ptr),mutex_(new std::mutex)
+    {
+        if(ptr_ == nullptr)     count_ = new int(0);
+        else count_ = new int(1);    
+    }   
+
+    MyPtr(const MyPtr& other)
+    {
+        if(this != &other)
+        {
+            ptr_ = other.ptr_;
+            count_ = other.count_;
+            mutex_ = other.mutex_;
+            addCount();
+        }
+        return;
+    }
+
+    MyPtr& operator=(const MyPtr& other)
+    {
+        if(ptr_ != other.ptr_)
+        {
+            ptr_ = other.ptr_;
+            count_ = other.count_;
+            mutex_ = other.mutex_;
+            addCount();
+        }
+        return *this;
+    }
+
+    ~MyPtr()
+    {
+        release();
+    }
+
+    void addCount()
+    {
+        mutex_->lock();
+        (*count_) ++;
+        mutex_->unlock();
+    }
+
+    void release()
+    {
+        bool isDelete = false;
+        mutex_->lock();
+        if( --(*count_) == 0)
+        {
+            delete ptr_;
+            delete count_;
+            isDelete = true;
+        }
+        mutex_->unlock();
+        if(isDelete)    delete mutex_;    
+    }
+
+    void showCount()
+    {
+        std::cout << "count=" << (*count_) << std::endl;
+    }
+
+    T& operator*(){return *ptr_;}
+    template<typename U>
+    friend std::ostream& operator<<(std::ostream& os, const MyPtr<U>& ptr);
+};
+
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const MyPtr<T>& ptr)
+{
+    lock_guard<mutex> lock(*ptr.mutex_);
+    os << ptr.ptr_ << ", count: " << *ptr.count_;
+    return os;
+}
+
+int main()
+{
+    MyPtr<int> p1(new int(2));
+    p1.showCount();
+    MyPtr<int> p2(p1);
+    p1.showCount();
+    p2.showCount();
+
+    MyPtr<int> p3 = p2;
+    p3.showCount();
+    p2.showCount();
+
+    cout << *p1 << endl;
+    cout << p1 << endl;
+    cout << p2 << endl;
+    cout << p3 << endl;
+}
