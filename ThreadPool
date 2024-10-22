@@ -1,0 +1,92 @@
+#include <iostream>
+#include <mutex>
+#include <condition_variable>
+#include <queue>
+#include <thread>
+#include <vector>
+#include <functional>
+#include <unistd.h>
+using namespace std;
+
+class ThreadPool
+{
+private:
+    int thread_;
+    vector<thread> vec_;
+    mutex mutex_;
+    condition_variable cond_;
+    queue<function<void()>> que_;
+    bool stop_;
+
+public:
+    ThreadPool(int thread = 3):thread_(thread),stop_(false)
+    {
+        for(int i = 0 ; i < thread_ ; i ++)
+        {
+            vec_.emplace_back(&ThreadPool::worker,this);
+        }
+    }
+    
+    void worker()
+    {
+        while(true)
+        {
+            function<void()> task;  
+
+            {   
+                unique_lock<mutex> lock(mutex_);
+                while(que_.empty() && !stop_)
+                {
+                    cond_.wait(lock);
+                }
+
+                if(que_.empty() && stop_)   return;
+                task = move(que_.front());
+                que_.pop();
+            }
+            cout << "线程" << this_thread::get_id() << "执行任务" << std::endl;
+            task();
+        }
+    }
+
+    void enqueue(int k,function<void()> task)
+    {
+        {
+            unique_lock<mutex> lock(mutex_);
+            for(int i = 0 ; i < k ;  i++)
+            {
+                que_.push(task);
+                // cond_.notify_one();
+                cond_.notify_one();
+            }
+            cond_.notify_one();
+        }
+    }
+
+    ~ThreadPool()
+    {
+        {
+            unique_lock<mutex> lock(mutex_);
+            stop_ = true;
+        }
+        cond_.notify_all();
+        for(auto& it : vec_)
+        {
+            if(it.joinable())  it.join();
+        }
+    }
+};
+
+void kk()
+{
+    static int ii = 1;
+    std::cout << "第" << ii++ << "次任务" <<std::endl;
+}
+
+int main()
+{
+    ThreadPool pool;
+    pool.enqueue(10,kk);
+
+    sleep(10);
+}
