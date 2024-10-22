@@ -1,0 +1,113 @@
+#include <iostream>
+#include <memory>
+
+template<typename T>
+class Vec
+{
+private:
+    T *vec_;
+    int size_;
+    int capacity_;
+
+public:
+    Vec(int capacity):capacity_(capacity),size_(0)
+    {
+        if(capacity_ == 0)  
+        {
+            std::cout << "容量为0" << std::endl;
+            vec_ = nullptr;
+        }
+        else
+        {
+            vec_ = new T[capacity_];
+        }
+    }
+
+    Vec(const Vec& other)
+    {
+        std::cout << " aaa" << std::endl;
+        size_ = other.size_;
+        capacity_ = other.capacity_;
+        vec_ = new T[capacity_];
+        for(int i = 0 ; i < size_ ; i++)
+            vec_[i] = other.vec_[i];
+    }
+
+    Vec& operator=(const Vec& other)
+    {
+        if(this!=&other)
+        {
+            size_ = other.size_;
+            capacity_ = other.capacity_;
+            vec_ = new T[capacity_];
+            for(int i = 0 ; i < size_ ; i++)
+                vec_[i] = other.vec_[i];
+        }
+        return *this;
+    }
+
+    void Add(const T& val)
+    {
+        if(size_ >= capacity_)
+            Expansion();
+        vec_[size_++] = val;
+    }
+    
+    void Expansion()
+    {
+        int k = capacity_ * 2;
+        T* newvec = new T[k];
+        for(int i = 0 ; i < capacity_ ; i++)
+            newvec[i] = vec_[i];
+        capacity_ = k;
+    }
+
+    void poop()
+    {
+        if(size_ == 0)
+        {
+            std::cout << "size == 0" << std::endl;
+            return;
+        }
+        size_ --;
+        vec_[size_] = T();
+    }
+
+    void show()
+    {
+        std::cout << "capacity=" << capacity_ << std::endl;
+        std::cout << "size=" << size_ << std::endl;
+    }
+
+    T& operator[](int index)
+    {
+        if(index < 0 || index >= size_)
+            syd::cout << "index of range" << std::endl;
+        return vec_[index];
+    }
+
+    void display()
+    {
+        for(int i = 0 ; i < size_ ; i++)
+            std::cout << vec_[i] <<" ";
+    }
+};
+
+int main()
+{
+    Vec<int> v(1);
+    // v.show();
+    v.poop();
+    v.Add(2);
+    v.Add(3);
+    v.Add(4);
+    v.display();
+    v.show();
+
+    Vec<int> v1(v);
+    Vec<int> v2(1);
+    v2 = v1;
+
+    v1.show();
+    v2.show();
+}
