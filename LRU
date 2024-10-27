@@ -1,0 +1,113 @@
+// LRU类,哈希表加双向链表
+struct DLinkList 
+{
+	int key_;
+	int value_;
+	DLinkList* prev;
+	DLinkList* next;
+
+	DLinkList():key_(0),prev(nullptr),next(nullptr){}
+	DLinkList(int key,int value):key_(key),value_(value),prev(nullptr),next(nullptr){}
+};
+
+class LRUcache
+{
+private:
+	std::unordered_map<int,DLinkList*> cache_;
+	DLinkList* head_;
+	DLinkList* tail_;
+	int size_;
+	int capacity_;
+
+public:
+	LRUcache(int capacity):capacity_(capacity),size_(0)
+	{
+		head_ = new DLinkList;
+		tail_ = new DLinkList;
+		head_->next = tail_;
+		tail_->prev = head_;
+	}	
+
+	int get(int key)
+	{
+		if(!cache_.count(key))	return -1;
+		
+		DLinkList* node = cache_[key];
+		// 添加到链表头
+		MoveHead(node);
+		return node->value_;
+	}
+
+	void put(int key,int value)
+	{
+		if(!cache_.count(key))
+		{
+			DLinkList* node = new DLinkList(key,value);
+			cache_[key] = node;
+			addToHead(node);
+			size_ ++;
+			if(size_ > capacity_)
+			{
+				DLinkList* moved = removeTail();
+				cache_.erase(moved->key_);
+				delete moved;
+				-- size_;
+			}
+		}
+		else
+		{
+			DLinkList* node = cache_[key];
+			node->value_ = value;
+			MoveHead(node);
+		}
+	}
+
+	void MoveHead(DLinkList* node)
+	{
+		removeNode(node);
+		addToHead(node);
+	}
+
+	void removeNode(DLinkList* node)
+	{
+		node->next->prev = node->prev;
+		node->prev->next = node->next;
+	}
+
+	void addToHead(DLinkList* node)
+	{
+		node->next = head_->next;
+		node->next->prev = node;
+		node->prev = head_;
+		head_->next = node;
+	}
+
+	DLinkList* removeTail()
+	{
+		DLinkList* removed = tail_->prev;
+		removeNode(removed);
+		return removed;
+	}
+
+	void show()
+	{
+		DLinkList* p = head_;
+		while(p!=tail_)
+		{
+			std::cout << p->key_ << ":" << p->value_ << std::endl;
+			p = p->next;
+		}
+	}
+};
+int main()
+{
+	LRUcache* k = new LRUcache(3);
+	k->put(1,1);
+	k->put(2,2);
+	k->get(1);
+	k->put(3,3);
+	k->show();
+	k->put(4,4);
+
+	k->show();
+}
